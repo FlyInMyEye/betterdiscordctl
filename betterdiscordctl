@@ -578,17 +578,16 @@ bdc_clean_legacy() {
 
 bd_prepare_core() {
   if [[ ! -w $d_core/index.js ]]; then
-    declare d_core_module_tmp
-    d_core_module_tmp=$d_core_module.betterdiscordctl-old
-    if [[ -e $d_core_module_tmp ]]; then
-      chmod -R u+w "$d_core_module_tmp"
-      rm -rf "$d_core_module_tmp"
-    fi
-    mv "$d_core_module" "$d_core_module_tmp"
-    cp -R "$d_core_module_tmp" "$d_core_module"
+    declare d_core_module_parent d_core_module_tmp d_core_module_old
+    d_core_module_parent=${d_core_module%/*}
+    d_core_module_tmp=$(mktemp -d "$d_core_module_parent/.betterdiscordctl.XXXXXX")
+    cp -R "$d_core_module/." "$d_core_module_tmp"
     chmod -R u+w "$d_core_module_tmp"
-    chmod -R u+w "$d_core_module"
-    rm -rf "$d_core_module_tmp"
+    d_core_module_old=$(mktemp -d "$d_core_module_parent/.betterdiscordctl-old.XXXXXX")
+    rmdir "$d_core_module_old"
+    mv "$d_core_module" "$d_core_module_old"
+    mv "$d_core_module_tmp" "$d_core_module"
+    rm -rf "$d_core_module_old" || >&2 printf 'WARN: Failed to remove old Discord core module copy: %s\n' "$d_core_module_old"
   fi
   [[ -w $d_core/index.js ]] || die "ERROR: Discord core module is not writable: $d_core/index.js"
 }
